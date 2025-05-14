@@ -29,14 +29,14 @@ def extract_costs(text):
     return 1000  # Default cost if none found
 
 def get_program_recommendations(interests, level, language_level, budget):
-    """Search for study programs using DuckDuckGo."""
+    """Search for study programs using DuckDuckGo, focusing on DAAD database."""
     try:
         logger.info("="*50)
         logger.info("Starting new search")
         logger.info(f"Parameters: interests={interests}, level={level}, language={language_level}, budget={budget}")
         
-        # Construct search query - removed site:.de restriction and added more relevant terms
-        query = f"{interests} {level} degree program university Germany studium"
+        # Construct search query specifically for DAAD
+        query = f"site:daad.de/en/study-and-research-in-germany/courses-of-study-in-germany {interests} {level} degree program"
         logger.info(f"Search query: {query}")
         
         recommendations = []
@@ -53,21 +53,21 @@ def get_program_recommendations(interests, level, language_level, budget):
                         return list(ddgs.text(
                             query,
                             safesearch='off',
-                            max_results=15
+                            max_results=10  # Reduced to 10 since we're focusing on DAAD
                         ))
                 except DuckDuckGoSearchException as e:
                     if "Ratelimit" in str(e):
-                        if attempt < max_retries - 1:  # Don't sleep on last attempt
+                        if attempt < max_retries - 1:
                             logger.warning(f"Rate limited, waiting {retry_delay} seconds before retry {attempt + 1}/{max_retries}")
                             time.sleep(retry_delay)
-                            retry_delay *= 2  # Double the delay for next attempt
+                            retry_delay *= 2
                             continue
-                    raise  # Re-raise if it's not a rate limit or we're out of retries
+                    raise
                 except Exception as e:
                     logger.error(f"Unexpected error during search: {str(e)}")
                     raise
             
-            return []  # Return empty list if all retries failed
+            return []
 
         try:
             logger.info("Initializing DuckDuckGo search with timeout...")
