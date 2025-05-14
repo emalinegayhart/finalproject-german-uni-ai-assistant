@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto" x-data="{ 
+    showResults: false, 
+    loading: false, 
+    recommendations: [],
+    async submitForm() {
+        const form = document.querySelector('form');
+        const formData = {
+            interests: form.interests.value,
+            level: form.level.value,
+            language_level: form.language_level.value,
+            budget: parseInt(form.budget.value)
+        };
+
+        this.loading = true;
+        this.showResults = false;
+
+        try {
+            const response = await fetch('/recommend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Received data:', data);
+            this.recommendations = data;
+            this.showResults = true;
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while getting recommendations. Please try again.');
+        } finally {
+            this.loading = false;
+        }
+    }
+}">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">Find Your Perfect Study Program in Germany</h1>
+        <p class="text-xl text-gray-600">Let our AI help you discover the best German university programs matching your interests and requirements.</p>
+    </div>
+
+    <div class="bg-white shadow rounded-lg p-6 mb-8">
+        <form @submit.prevent="submitForm()" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Your Academic Interests</label>
+                <textarea
+                    id="interests"
+                    name="interests"
+                    rows="3"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="e.g., Computer Science, Artificial Intelligence, Machine Learning"
+                    required
+                ></textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Study Level</label>
+                <select
+                    id="level"
+                    name="level"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                >
+                    <option value="bachelor">Bachelor's</option>
+                    <option value="master">Master's</option>
+                    <option value="phd">PhD</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">German Language Level</label>
+                <select
+                    id="language_level"
+                    name="language_level"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                >
+                    <option value="none">No German</option>
+                    <option value="A1">A1 - Beginner</option>
+                    <option value="A2">A2 - Elementary</option>
+                    <option value="B1">B1 - Intermediate</option>
+                    <option value="B2">B2 - Upper Intermediate</option>
+                    <option value="C1">C1 - Advanced</option>
+                    <option value="C2">C2 - Mastery</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Monthly Budget (in €)</label>
+                <input
+                    type="number"
+                    id="budget"
+                    name="budget"
+                    min="500"
+                    max="5000"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="1000"
+                    required
+                >
+            </div>
+
+            <div class="flex justify-center">
+                <button
+                    type="submit"
+                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    :disabled="loading"
+                >
+                    <span x-show="!loading" x-cloak>Get Recommendations</span>
+                    <span x-show="loading" x-cloak>
+                        Processing...
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading message -->
+    <div x-show="loading" x-cloak class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+        <div class="flex">
+            <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                    Searching for programs... This may take up to 90 seconds as we gather comprehensive results. If the initial search is rate-limited, we'll automatically retry for you.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showResults" x-cloak class="space-y-6">
+        <template x-if="recommendations.length === 0">
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div class="flex">
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            No recommendations found. It's possible that the search was rate-limited.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <template x-for="(rec, index) in recommendations" :key="index">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-xl font-bold text-gray-900" x-text="rec.programName"></h3>
+                <div class="mt-4 space-y-2">
+                    <p><strong>University:</strong> <span x-text="rec.university"></span></p>
+                    <p><strong>City:</strong> <span x-text="rec.city"></span></p>
+                    <p><strong>Requirements:</strong> <span x-text="rec.requirements"></span></p>
+                    <p><strong>Monthly Costs:</strong> <span x-text="rec.monthlyCosts + '€'"></span></p>
+                    <p class="mt-4 text-gray-600" x-text="rec.explanation"></p>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>
+{% endblock %} 
